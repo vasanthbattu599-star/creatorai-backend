@@ -13,8 +13,7 @@ const port = process.env.PORT || 3000;
 app.get("/", (_req,res) => res.json({ok:true, service:"CreatorAI backend"}));
 
 app.post("/api/script", async (req,res) => {
-  try {
-    const {topic, language="English", type="Long Video"} = req.body || {};
+  try {const { topic, language = "English", type = "Long Video" } = req.body || {};
     if (!topic) return res.status(400).json({error:"topic is required"});
     const prompt = `You are a YouTube content assistant. Create an original ${type} plan for "${topic}" in ${language}. Return 3 title options, a strong first-10-second hook, a complete engaging script, a short description, 8 relevant hashtags, and a natural subscribe CTA. Do not promise views/subscribers or fabricate facts.`;
     const response = await ai.models.generateContent({
