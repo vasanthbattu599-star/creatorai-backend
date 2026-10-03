@@ -16,10 +16,7 @@ const port = process.env.PORT || 3000;
 
 // Test route
 app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    service: "CreatorAI backend"
-  });
+  res.sendFile(__dirname + "/index.html");
 });
 
 // AI script route
