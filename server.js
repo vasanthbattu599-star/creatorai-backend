@@ -1,36 +1,43 @@
 import express from "express";
 import cors from "cors";
-import "dotenv/config";
-import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import path from "path";
 import { fileURLToPath } from "url";
 
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  console.error("GEMINI_API_KEY is missing");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const port = process.env.PORT || 3000;
 
-// Test route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
-// AI script route
+});
+
 app.post("/api/script", async (req, res) => {
   try {
-    const topic = req.body?.topic;
-    const language = req.body?.language || "English";
-    const type = req.body?.type || "Long Video";
+    const topic = req.body.topic;
+    const language = req.body.language || "English";
+    const type = req.body.type || "Long Video";
 
     if (!topic || !String(topic).trim()) {
       return res.status(400).json({
-        error: "topic is required"
+        error: "Topic is required"
       });
     }
 
@@ -44,16 +51,20 @@ Language: ${language}
 
 Make it engaging, natural and easy to understand.
 Do not copy existing content.
+Include a strong hook, useful information and a clear ending.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: prompt
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash"
     });
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const output = response.text();
 
     res.json({
       ok: true,
-      output: response.text
+      output: output
     });
 
   } catch (err) {
@@ -67,5 +78,5 @@ Do not copy existing content.
 });
 
 app.listen(port, () => {
-  console.log(`CreatorAI backend running on ${port}`);
+  console.log(`CreatorAI backend running on port ${port}`);
 });
