@@ -77,6 +77,6 @@ Include a strong hook, useful information and a clear ending.
   }
 });
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`CreatorAI backend running on port ${port}`);
 });
