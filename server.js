@@ -15,18 +15,28 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
+const PORT = process.env.PORT || 10000;
+
 const apiKey = process.env.GEMINI_API_KEY;
 
-if (!apiKey) {
-  console.error("GEMINI_API_KEY is missing");
+let genAI = null;
+
+if (apiKey) {
+  genAI = new GoogleGenerativeAI(apiKey);
+  console.log("Gemini API configured.");
+} else {
+  console.log("GEMINI_API_KEY is not set.");
 }
-
-const genAI = new GoogleGenerativeAI(apiKey);
-
-const port = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
+});
+
+app.get("/health", (req, res) => {
+  res.json({
+    ok: true,
+    status: "CreatorAI backend running"
+  });
 });
 
 app.post("/api/script", async (req, res) => {
@@ -37,7 +47,15 @@ app.post("/api/script", async (req, res) => {
 
     if (!topic || !String(topic).trim()) {
       return res.status(400).json({
+        ok: false,
         error: "Topic is required"
+      });
+    }
+
+    if (!genAI) {
+      return res.status(500).json({
+        ok: false,
+        error: "GEMINI_API_KEY is missing"
       });
     }
 
@@ -71,12 +89,13 @@ Include a strong hook, useful information and a clear ending.
     console.error(err);
 
     res.status(500).json({
+      ok: false,
       error: "Gemini request failed",
       details: String(err.message || err)
     });
   }
 });
 
-app.listen(port, "0.0.0.0", () => {
-  console.log(`CreatorAI backend running on port ${port}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`CreatorAI backend running on port ${PORT}`);
 });
