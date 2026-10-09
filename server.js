@@ -16,17 +16,11 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 
 const PORT = process.env.PORT || 10000;
-
 const apiKey = process.env.GEMINI_API_KEY;
 
-let genAI = null;
-
-if (apiKey) {
-  genAI = new GoogleGenerativeAI(apiKey);
-  console.log("Gemini API configured.");
-} else {
-  console.log("GEMINI_API_KEY is not set.");
-}
+const genAI = apiKey
+  ? new GoogleGenerativeAI(apiKey)
+  : null;
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
@@ -41,9 +35,8 @@ app.get("/health", (req, res) => {
 
 app.post("/api/script", async (req, res) => {
   try {
-    const topic = req.body.topic;
-    const language = req.body.language || "English";
-    const type = req.body.type || "Long Video";
+    const { topic, language = "English",
+      type = "Long Video" } = req.body;
 
     if (!topic || !String(topic).trim()) {
       return res.status(400).json({
@@ -60,16 +53,11 @@ app.post("/api/script", async (req, res) => {
     }
 
     const prompt = `
-You are a YouTube content assistant.
-
-Create an original ${type} script about:
-${topic}
-
+Create an original YouTube ${type} script.
+Topic: ${topic}
 Language: ${language}
-
-Make it engaging, natural and easy to understand.
-Do not copy existing content.
-Include a strong hook, useful information and a clear ending.
+Include a strong hook, useful information,
+and a clear ending. Do not copy existing content.
 `;
 
     const model = genAI.getGenerativeModel({
@@ -77,25 +65,23 @@ Include a strong hook, useful information and a clear ending.
     });
 
     const result = await model.generateContent(prompt);
-    const response = result.response;
-    const output = response.text();
 
     res.json({
       ok: true,
-      output: output
+      output: result.response.text()
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Script error:", err);
 
     res.status(500).json({
       ok: false,
-      error: "Gemini request failed",
+      error: "Script generation failed",
       details: String(err.message || err)
     });
   }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`CreatorAI backend running on port ${PORT}`);
+  console.log(`CreatorAI running on port ${PORT}`);
 });
